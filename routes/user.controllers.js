@@ -8,7 +8,7 @@ const authenticateToken = require("../middlewares/authenticate");
 //routes
 router.post("/authenticate", authenticate);
 router.post("/register", register);
-router.get("/", jwt(Role.Admin), getAll);
+router.get("/", jwt(), getAll);
 router.get("/current", jwt(), getCurrent);
 router.get("/:id", getById);
 router.delete("/:id", deleteUser);
