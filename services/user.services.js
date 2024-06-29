@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const config = require("../config.json");
 const db = require("../helpers/db");
+const { getTodosByUser } = require("./todo.services");
 const User = db.User;
 
 //this will authenticate the user credentials
@@ -45,13 +46,14 @@ async function create(userParam) {
   if (userParam.password) {
     newUser.password = bcrypt.hashSync(userParam.password, 10);
   }
-
   await newUser.save();
 }
 
 async function deleteUser(id) {
   try {
     const deletedUser = await User.findByIdAndRemove(id);
+    let latestTODOList = getTodosByUser(id);
+    global.io?.emit("get_todo_list", latestTODOList);
     return { id: deletedUser._id.toString() }; // Return deleted id
   } catch (error) {
     throw error;
@@ -75,7 +77,8 @@ async function updateUser(userId, updateFields) {
 
     // Save updated user
     await user.save();
-
+    let latestTODOList = getTodosByUser(userId);
+    global.io?.emit("get_todo_list", latestTODOList);
     return user.toJSON(); // Return updated user object
   } catch (error) {
     throw error;

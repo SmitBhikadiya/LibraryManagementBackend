@@ -5,6 +5,8 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 
+global.io = io;
+
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
@@ -42,13 +44,18 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
+function emitNewRecords(userId) {
+  console.log("Triggered!!");
+  let latestTODOList = getTodosByUser(userId);
+  socket.emit("get_todo_list", latestTODOList);
+}
+
 io.on("connection", (socket) => {
   const userId = socket?.request?._query?.userId;
   // update user status to online
   updateUser(userId, { isActive: true });
   // get user TODO list
-  let latestTODOList = getTodosByUser(userId);
-  socket.emit("get_todo_list", latestTODOList);
+  emitNewRecords(userId);
 
   socket.on("disconnect", function (socket) {
     // update user status to offline

@@ -52,6 +52,8 @@ async function createTodo(
   });
 
   await todo.save();
+  let latestTODOList = getTodosByUser(userId);
+  global.io?.emit("get_todo_list", latestTODOList);
   return todo;
 }
 
@@ -77,6 +79,8 @@ async function updateTodoById(todoId, updateData, userId) {
   // Update the todo with allowed fields
   Object.assign(todo, updateData);
   await todo.save();
+  let latestTODOList = getTodosByUser(userId);
+  global.io?.emit("get_todo_list", latestTODOList);
   return todo;
 }
 
@@ -153,6 +157,8 @@ async function deleteTodoById(todoId, userId) {
     }
 
     await Todo.findByIdAndDelete(todoId);
+    let latestTODOList = getTodosByUser(userId);
+    global.io?.emit("get_todo_list", latestTODOList);
     return { id: todo._id.toString() }; // Return deleted id
   } catch (error) {
     throw error;

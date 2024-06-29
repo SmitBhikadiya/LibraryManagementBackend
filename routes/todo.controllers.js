@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const todoService = require("../services/todo.services");
 const authenticateToken = require("../middlewares/authenticate");
+const { emitNewRecords } = require("../app");
 
 router.post("/create-todo", authenticateToken, createTodo);
 router.get("/", authenticateToken, getTodosByUser);
