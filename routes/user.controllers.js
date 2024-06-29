@@ -63,9 +63,9 @@ async function updateUser(req, res, next) {
 function getAll(req, res, next) {
   const currentUser = req.user;
 
-  if (currentUser.role !== Role.Admin) {
-    return res.status(401).json({ message: "Not Authorized!" });
-  }
+  // if (currentUser.role !== Role.Admin) {
+  //   return res.status(401).json({ message: "Not Authorized!" });
+  // }
   userServices
     .getAll()
     .then((users) => res.json(users))
