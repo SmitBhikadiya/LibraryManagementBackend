@@ -23,7 +23,10 @@ async function orderCreate(req, res, next) {
     if (!isEligible) {
       return res
         .status(400)
-        .json({ message: "Book is not available for borrowing." });
+        .json({
+          message:
+            "Book is not available for borrowing. or you reached the maximum borrow limit",
+        });
     }
 
     // Create the order

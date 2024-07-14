@@ -24,6 +24,17 @@ async function checkEligibility(userId, bookId) {
 async function createOrder(orderData) {
   const { bookId, userId, quantity } = orderData;
 
+  // Check if the user has already borrowed the same book
+  const existingOrders = await Order.find({ bookId, userId, status: "new" });
+  const totalBorrowed = existingOrders.reduce(
+    (sum, order) => sum + order.quantity,
+    0
+  );
+
+  if (totalBorrowed + quantity > 2) {
+    throw new Error("You cannot borrow more than 2 copies of the same book.");
+  }
+
   // Decrease the book quantity
   const book = await Book.findById(bookId);
   if (!book || book.quantity < quantity) {
@@ -51,8 +62,15 @@ async function completeOrder(orderId) {
       throw new Error("Order not found");
     }
 
+    // Increase the book quantity
+    const book = await Book.findById(order.bookId);
+    if (!book) throw new Error("Book not found");
+    book.quantity += order.quantity;
+    await book.save();
+
     // Update status to completed
     order.status = "completed";
+    order.returnAt = new Date();
     await order.save();
 
     return order;
@@ -89,7 +107,6 @@ function calculateDueDate() {
 module.exports = {
   checkEligibility,
   createOrder,
-  // reissueBook,
   completeOrder,
   getOrderedBooksByUser,
 };
