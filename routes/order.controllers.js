@@ -5,10 +5,10 @@ const orderServices = require("../services/order.services");
 const Role = require("../helpers/role");
 
 // routes
-router.post("/orderCreate", jwt(), orderCreate);
-router.patch("/reissueBook/:orderId", jwt(), reissueBook);
-router.patch("/orderComplete/:orderId", jwt(), orderComplete);
-router.get("/orderedBooksByUser", jwt(), getOrderedBooksByUser);
+router.get("/", jwt(), getOrderedBook);
+router.post("/", jwt(), orderCreate);
+// router.patch("/reissueBook/:orderId", jwt(), reissueBook);
+router.post("/:orderId/complete", jwt(), orderComplete);
 
 module.exports = router;
 
@@ -19,7 +19,7 @@ async function orderCreate(req, res, next) {
 
   try {
     // Check if the user is eligible to borrow the book
-    const isEligible = await orderServices.checkEligibility(user._id, bookId);
+    const isEligible = await orderServices.checkEligibility(user.sub, bookId);
     if (!isEligible) {
       return res
         .status(400)
@@ -29,7 +29,7 @@ async function orderCreate(req, res, next) {
     // Create the order
     const newOrder = await orderServices.createOrder({
       bookId,
-      userId: user._id,
+      userId: user.sub,
       quantity,
     });
 
@@ -39,23 +39,18 @@ async function orderCreate(req, res, next) {
   }
 }
 
-async function reissueBook(req, res, next) {
-  const { orderId } = req.params;
-  const today = new Date();
-
-  try {
-    const updatedOrder = await orderServices.reissueBook(orderId, today);
-
-    res.json(updatedOrder);
-  } catch (error) {
-    next(error);
-  }
-}
-
 async function orderComplete(req, res, next) {
-  const { orderId } = req.params;
+  const user = req.user;
+  const orderId = req.params.orderId;
 
   try {
+    // Check if the user is admin or librarian
+    if (![Role.Admin, Role.Librarian].includes(user.role)) {
+      return res.status(403).json({
+        message: "Forbidden: You are not authorized to complete orders.",
+      });
+    }
+
     const completedOrder = await orderServices.completeOrder(orderId);
 
     res.json(completedOrder);
@@ -64,11 +59,26 @@ async function orderComplete(req, res, next) {
   }
 }
 
-async function getOrderedBooksByUser(req, res, next) {
-  const userId = req.user.sub;
+async function getOrderedBook(req, res, next) {
+  const user = req.user;
+  const ofUser = req.query.ofUser;
+  const status = req.query.status;
 
   try {
-    const orderedBooks = await orderServices.getOrderedBooksByUser(userId);
+    let orderedBooks;
+
+    if ([Role.Admin, Role.Librarian].includes(user.role) && ofUser) {
+      // Fetch order history of another user if admin or librarian and ofUser is provided
+      orderedBooks = await orderServices.getOrderedBooksByUser(ofUser, status);
+    } else if ([Role.Admin, Role.Librarian].includes(user.role) && !ofUser) {
+      orderedBooks = await orderServices.getOrderedBooksByUser(null, status);
+    } else {
+      // Fetch own order history for normal users or if no ofUser provided for admin/librarian
+      orderedBooks = await orderServices.getOrderedBooksByUser(
+        user.sub,
+        status
+      );
+    }
 
     res.json(orderedBooks);
   } catch (error) {

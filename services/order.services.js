@@ -5,6 +5,7 @@ const Order = db.Order;
 async function checkEligibility(userId, bookId) {
   // Check if the book quantity is greater than 0
   const book = await Book.findById(bookId);
+  console.log({ book });
   if (!book || book.quantity <= 0) {
     return false;
   }
@@ -43,46 +44,40 @@ async function createOrder(orderData) {
   return newOrder;
 }
 
-async function reissueBook(orderId, issuedAt) {
-  const order = await Order.findById(orderId);
-  if (!order) {
-    throw new Error("Order not found");
-  }
-
-  // Update issuedAt to today's date
-  order.issuedAt = issuedAt;
-  order.dueDate = calculateDueDate(issuedAt); // Recalculate due date
-
-  await order.save();
-
-  return order;
-}
-
 async function completeOrder(orderId) {
-  const order = await Order.findById(orderId);
-  if (!order) {
-    throw new Error("Order not found");
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // Update status to completed
+    order.status = "completed";
+    await order.save();
+
+    return order;
+  } catch (error) {
+    console.error("Error in completeOrder:", error.message);
+    throw error;
   }
-
-  // Update status to completed
-  order.status = "completed";
-  await order.save();
-
-  return order;
 }
 
-async function getOrderedBooksByUser(userId) {
-  const orderedBooks = await Order.find({ userId })
-    .populate({
-      path: "bookId",
-      select: "name author",
-    })
-    .populate({
-      path: "userId",
-      select: "name email",
-    });
+async function getOrderedBooksByUser(userId = null, status = null) {
+  try {
+    // Query to get order history
+    const query = {};
+    if (userId) query.userId = userId;
+    if (status) query.status = status;
 
-  return orderedBooks;
+    const orderedBooks = await Order.find(query)
+      .populate("bookId", "name author genre ISBN") // Populate book details if needed
+      .exec();
+
+    return orderedBooks;
+  } catch (error) {
+    console.error("Error in getOrderedBooksByUser:", error.message);
+    throw error;
+  }
 }
 
 function calculateDueDate() {
@@ -94,7 +89,7 @@ function calculateDueDate() {
 module.exports = {
   checkEligibility,
   createOrder,
-  reissueBook,
+  // reissueBook,
   completeOrder,
   getOrderedBooksByUser,
 };
