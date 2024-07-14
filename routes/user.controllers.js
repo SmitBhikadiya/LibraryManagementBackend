@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const userServices = require("../services/user.services");
 const jwt = require("../helpers/jwt");
-const authenticateToken = require("../middlewares/authenticate");
 const Role = require("../helpers/role");
 
 router.post("/authenticate", authenticate);
@@ -43,7 +42,6 @@ function register(req, res, next) {
 function getUsers(req, res, next) {
   const user = req.user;
 
-  // Check if the user is authorized (Admin or Librarian)
   if (![Role.Admin, Role.Librarian].includes(user.type)) {
     return res.status(403).json({
       message: "Forbidden: You are not authorized to access user list.",
@@ -93,7 +91,7 @@ function deleteUser(req, res, next) {
 }
 
 async function updateUser(req, res, next) {
-  const userId = req.user.sub; // Assuming userId is from JWT token
+  const userId = req.user.sub;
   const updateData = {
     email: req.body.email,
     password: req.body.password,
@@ -102,7 +100,9 @@ async function updateUser(req, res, next) {
     isActive: req.body.isActive,
     deactivationReason: req.body.deactivationReason,
     updatedAt: Date.now(),
-    updatedBy: req.user.sub, // Assuming updatedBy is from JWT token
+    updatedBy: req.user.sub,
+    address: req.body.address,
+    phoneNumber: req.body.phoneNumber,
   };
 
   try {

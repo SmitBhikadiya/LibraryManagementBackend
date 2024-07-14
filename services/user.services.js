@@ -62,6 +62,8 @@ async function updateUser(userId, updateFields) {
       user.deactivationReason = updateFields.deactivationReason;
     if (updateFields.updatedAt) user.updatedAt = updateFields.updatedAt;
     if (updateFields.updatedBy) user.updatedBy = updateFields.updatedBy;
+    if (updateFields.address) user.address = updateFields.address;
+    if (updateFields.phoneNumber) user.phoneNumber = updateFields.phoneNumber;
 
     await user.save();
     return user.toJSON();

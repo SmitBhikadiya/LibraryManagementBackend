@@ -12,6 +12,8 @@ const userSchema = new Schema({
   updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
   createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+  address: { type: String },
+  phoneNumber: { type: String },
 });
 
 module.exports = mongoose.model("User", userSchema);
