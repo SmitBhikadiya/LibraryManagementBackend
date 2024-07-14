@@ -7,7 +7,6 @@ function jwt(roles = []) {
   // or an array of roles (e.g. [Role.Admin, Role.User] or ['Admin', 'User'])
   if (typeof roles === "string") {
     roles = [roles];
-    console.log(roles);
   }
   const secret = config.secret || process.env.JWT_SECRET;
   return [
@@ -23,7 +22,7 @@ function jwt(roles = []) {
         return res.status(401).json({ message: "Only Admin is Authorized!" });
       }
       // authentication and authorization successful
-      req.user.role = user.role;
+      req.user.type = user.type;
       next();
     },
   ];
