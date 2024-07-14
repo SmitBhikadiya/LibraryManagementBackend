@@ -15,6 +15,7 @@ const bookSchema = new Schema({
   updatedAt: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
   createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+  image: { type: String }, // Optional field for base64 encoded image data
 });
 
 module.exports = mongoose.model("Book", bookSchema);
