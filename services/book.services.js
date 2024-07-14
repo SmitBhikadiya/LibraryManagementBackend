@@ -15,10 +15,25 @@ async function searchBooks(query) {
     .populate("updatedBy", "email name");
 }
 
-async function getAllBooks() {
-  return await Book.find()
+async function getAllBooks(query) {
+  let filter = {};
+
+  if (query) {
+    const regex = new RegExp(query, "i");
+    filter = {
+      $or: [
+        { name: regex },
+        { author: regex },
+        { genre: regex },
+        { ISBN: regex },
+      ],
+    };
+  }
+
+  return await Book.find(filter)
     .populate("createdBy", "email name")
-    .populate("updatedBy", "email name");
+    .populate("updatedBy", "email name")
+    .sort({ createdAt: -1 });
 }
 
 async function getBookById(id) {
@@ -41,10 +56,14 @@ async function updateBook(bookId, updateData) {
 }
 
 async function deleteBook(bookId) {
+  const book = await Book.findById(bookId);
+  if (!book) throw new Error("Book not found");
+
   // Check if the book is currently borrowed
-  const isBorrowed = await BookOrder.exists({ bookId, returnAt: null });
-  if (isBorrowed)
+  const isBorrowed = await Book.exists({ _id: bookId, returnAt: null });
+  if (isBorrowed) {
     throw new Error("Cannot delete the book as it is currently borrowed.");
+  }
 
   const deletedBook = await Book.findByIdAndRemove(bookId);
   if (!deletedBook) throw new Error("Book not found");
@@ -56,18 +75,32 @@ async function deleteBook(bookId) {
 }
 
 async function getRecommendedBooks() {
-  const mostPurchasedBooks = await BookOrder.aggregate([
-    { $group: { _id: "$bookId", totalQuantity: { $sum: "$quantity" } } },
-    { $sort: { totalQuantity: -1 } },
-    { $limit: 20 },
-  ]);
+  try {
+    const mostPurchasedBooks = await Book.aggregate([
+      { $group: { _id: "$_id", totalQuantity: { $sum: "$quantity" } } },
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 20 },
+    ]);
 
-  const recommendedBooks = await Book.populate(mostPurchasedBooks, {
-    path: "_id",
-    select: "name author",
-  });
+    const bookIds = mostPurchasedBooks.map((item) => item._id); // Extracting book IDs
 
-  return recommendedBooks;
+    const recommendedBooks = await Book.find({ _id: { $in: bookIds } }).exec();
+
+    return recommendedBooks;
+  } catch (error) {
+    console.error("Error in getRecommendedBooks:", error.message);
+    throw error;
+  }
+}
+
+async function addBooks(booksData) {
+  if (!Array.isArray(booksData)) {
+    booksData = [booksData];
+  }
+
+  const insertedBooks = await Book.insertMany(booksData);
+
+  return insertedBooks;
 }
 
 module.exports = {
@@ -77,4 +110,5 @@ module.exports = {
   updateBook,
   deleteBook,
   getRecommendedBooks,
+  addBooks,
 };

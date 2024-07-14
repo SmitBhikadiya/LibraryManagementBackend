@@ -2,29 +2,22 @@ const express = require("express");
 const router = express.Router();
 const bookServices = require("../services/book.services");
 const jwt = require("../helpers/jwt");
+const Role = require("../helpers/role");
 
 // routes
-router.get("/search", jwt(), searchBooks);
-router.get("/", jwt(), getAllBooks);
-router.get("/:id", jwt(), getBookById);
+router.get("/", getAllBooks);
+router.get("/recommend", recommendBook);
+router.get("/:id", getBookById);
 router.patch("/:id", jwt(), updateBook);
 router.delete("/:id", jwt(), deleteBook);
-router.get("/recommendBook", jwt(), recommendBook);
+router.post("/", jwt(), addBooks);
 
 module.exports = router;
 
-// route functions
-function searchBooks(req, res, next) {
-  const query = req.query.by;
-  bookServices
-    .searchBooks(query)
-    .then((books) => res.json(books))
-    .catch((error) => next(error));
-}
-
 function getAllBooks(req, res, next) {
+  const query = req.query.searchBy;
   bookServices
-    .getAllBooks()
+    .getAllBooks(query)
     .then((books) => res.json(books))
     .catch((error) => next(error));
 }
@@ -84,5 +77,22 @@ function recommendBook(req, res, next) {
   bookServices
     .getRecommendedBooks()
     .then((recommendedBooks) => res.json(recommendedBooks))
+    .catch((error) => next(error));
+}
+
+function addBooks(req, res, next) {
+  const user = req.user;
+  const booksData = req.body;
+
+  // Check if the user has the right role
+  if (![Role.Admin, Role.Librarian].includes(user.role)) {
+    return res
+      .status(403)
+      .json({ message: "Forbidden: You are not authorized to add books." });
+  }
+
+  bookServices
+    .addBooks(booksData)
+    .then((addedBooks) => res.json(addedBooks))
     .catch((error) => next(error));
 }

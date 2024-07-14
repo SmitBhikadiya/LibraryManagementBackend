@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const orderSchema = new Schema({
-  orderId: { type: Schema.Types.ObjectId, auto: true, primary: true },
   bookId: { type: Schema.Types.ObjectId, ref: "Book", required: true },
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   issuedAt: { type: Date, default: Date.now },

@@ -1,6 +1,6 @@
 const db = require("../helpers/db");
 const Book = db.Book;
-const BookOrder = db.BookOrder;
+const Order = db.Order;
 
 async function checkEligibility(userId, bookId) {
   // Check if the book quantity is greater than 0
@@ -10,7 +10,7 @@ async function checkEligibility(userId, bookId) {
   }
 
   // Check if the user has any late fees for this book
-  const existingOrder = await BookOrder.findOne({
+  const existingOrder = await Order.findOne({
     userId,
     bookId,
     returnAt: null,
@@ -32,7 +32,7 @@ async function createOrder(orderData) {
   await book.save();
 
   // Create the order
-  const newOrder = new BookOrder({
+  const newOrder = new Order({
     bookId,
     userId,
     quantity,
@@ -44,7 +44,7 @@ async function createOrder(orderData) {
 }
 
 async function reissueBook(orderId, issuedAt) {
-  const order = await BookOrder.findById(orderId);
+  const order = await Order.findById(orderId);
   if (!order) {
     throw new Error("Order not found");
   }
@@ -59,7 +59,7 @@ async function reissueBook(orderId, issuedAt) {
 }
 
 async function completeOrder(orderId) {
-  const order = await BookOrder.findById(orderId);
+  const order = await Order.findById(orderId);
   if (!order) {
     throw new Error("Order not found");
   }
@@ -72,7 +72,7 @@ async function completeOrder(orderId) {
 }
 
 async function getOrderedBooksByUser(userId) {
-  const orderedBooks = await BookOrder.find({ userId })
+  const orderedBooks = await Order.find({ userId })
     .populate({
       path: "bookId",
       select: "name author",
