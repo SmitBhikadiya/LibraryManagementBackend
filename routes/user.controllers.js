@@ -1,27 +1,24 @@
 const express = require("express");
 const router = express.Router();
 const userServices = require("../services/user.services");
-const Role = require("../helpers/role");
 const jwt = require("../helpers/jwt");
 const authenticateToken = require("../middlewares/authenticate");
+const Role = require("../helpers/role");
 
-//routes
 router.post("/authenticate", authenticate);
 router.post("/register", register);
-router.get("/", jwt(), getAll);
+router.get("/", jwt(), getUsers);
 router.get("/current", jwt(), getCurrent);
-router.get("/:id", getById);
-router.delete("/:id", deleteUser);
-router.patch("/", authenticateToken, updateUser);
+router.get("/:id", jwt(), getById);
+router.delete("/:id", jwt(), deleteUser);
+router.patch("/", jwt(), updateUser);
 
 module.exports = router;
 
-//route functions
 function authenticate(req, res, next) {
   userServices
     .authenticate(req.body)
     .then((user) => {
-      console.log(user);
       user
         ? res.json({ user: user, message: "User logged in successfully" })
         : res
@@ -43,29 +40,16 @@ function register(req, res, next) {
     .catch((error) => next(error));
 }
 
-async function updateUser(req, res, next) {
-  const userId = req.user.sub;
-  const { firstName, lastName, role, isActive } = req.body;
-  try {
-    const updatedUser = await userServices.updateUser(userId, {
-      firstName,
-      lastName,
-      role,
-      isActive,
+function getUsers(req, res, next) {
+  const user = req.user;
+
+  // Check if the user is authorized (Admin or Librarian)
+  if (![Role.Admin, Role.Librarian].includes(user.type)) {
+    return res.status(403).json({
+      message: "Forbidden: You are not authorized to access user list.",
     });
-
-    res.json(updatedUser);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
   }
-}
 
-function getAll(req, res, next) {
-  const currentUser = req.user;
-
-  // if (currentUser.role !== Role.Admin) {
-  //   return res.status(401).json({ message: "Not Authorized!" });
-  // }
   userServices
     .getAll()
     .then((users) => res.json(users))
@@ -73,10 +57,13 @@ function getAll(req, res, next) {
 }
 
 function getCurrent(req, res, next) {
-  console.log(req);
   userServices
     .getById(req.user.sub)
-    .then((user) => (user ? res.json(user) : res.status(404)))
+    .then((user) =>
+      user
+        ? res.json(user)
+        : res.status(404).json({ message: "User not found" })
+    )
     .catch((error) => next(error));
 }
 
@@ -86,9 +73,9 @@ function getById(req, res, next) {
     .then((user) => {
       if (!user) {
         res.status(404).json({ message: "User Not Found!" });
-        next();
+      } else {
+        res.json(user);
       }
-      return res.json(user);
     })
     .catch((error) => next(error));
 }
@@ -98,9 +85,30 @@ function deleteUser(req, res, next) {
     .deleteUser(req.params.id)
     .then((deletedUser) =>
       res.json({
-        id: deletedUser.id,
-        message: `User with id: ${deletedUser.id} deleted successfully.`,
+        id: deletedUser._id,
+        message: `User with id: ${deletedUser._id} deleted successfully.`,
       })
     )
     .catch((error) => next(error));
+}
+
+async function updateUser(req, res, next) {
+  const userId = req.user.sub; // Assuming userId is from JWT token
+  const updateData = {
+    email: req.body.email,
+    password: req.body.password,
+    name: req.body.name,
+    type: req.body.type,
+    isActive: req.body.isActive,
+    deactivationReason: req.body.deactivationReason,
+    updatedAt: Date.now(),
+    updatedBy: req.user.sub, // Assuming updatedBy is from JWT token
+  };
+
+  try {
+    const updatedUser = await userServices.updateUser(userId, updateData);
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 }

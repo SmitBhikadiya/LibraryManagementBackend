@@ -2,10 +2,6 @@ const express = require("express");
 const app = express();
 const http = require("http");
 const server = http.createServer(app);
-const { Server } = require("socket.io");
-const io = new Server(server);
-
-global.io = io;
 
 var path = require("path");
 var cookieParser = require("cookie-parser");
@@ -15,9 +11,8 @@ const errorHandler = require("./helpers/errorHandler");
 
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/user.controllers");
-var todosRouter = require("./routes/todo.controllers");
-const { updateUser } = require("./services/user.services");
-const { getTodosByUser } = require("./services/todo.services");
+var booksRouter = require("./routes/book.controllers");
+var ordersRouter = require("./routes/order.controllers");
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -28,7 +23,8 @@ app.use(cors());
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
-app.use("/todos", todosRouter);
+app.use("/books", booksRouter);
+app.use("/orders", ordersRouter);
 
 // catch 404 and forward to error handler
 app.use(errorHandler);
@@ -42,25 +38,6 @@ app.use(function (err, req, res, next) {
   // render the error page
   res.status(err.status || 500);
   res.render("error");
-});
-
-function emitNewRecords(userId) {
-  console.log("Triggered!!");
-  let latestTODOList = getTodosByUser(userId);
-  socket.emit("get_todo_list", latestTODOList);
-}
-
-io.on("connection", (socket) => {
-  const userId = socket?.request?._query?.userId;
-  // update user status to online
-  updateUser(userId, { isActive: true });
-  // get user TODO list
-  emitNewRecords(userId);
-
-  socket.on("disconnect", function (socket) {
-    // update user status to offline
-    updateUser(userId, { isActive: false });
-  });
 });
 
 server.listen(5000, () => console.log(`Server is listening on PORT: 5000`));
