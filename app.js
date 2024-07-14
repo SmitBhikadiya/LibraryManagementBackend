@@ -13,6 +13,7 @@ var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/user.controllers");
 var booksRouter = require("./routes/book.controllers");
 var ordersRouter = require("./routes/order.controllers");
+var dashboardRouter = require("./routes/dashboard.controller");
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -25,6 +26,7 @@ app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/books", booksRouter);
 app.use("/orders", ordersRouter);
+app.use("/dashboard", dashboardRouter);
 
 // catch 404 and forward to error handler
 app.use(errorHandler);
